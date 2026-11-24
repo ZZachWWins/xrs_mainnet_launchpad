@@ -12,7 +12,14 @@
     "replace incompatible synthetic chart with unavailable history",
     "keep network selector above legacy fixed navigation",
     "replace fabricated holder rows with unavailable state",
-    "label static protocol details without implying an audit"
+    "label static protocol details without implying an audit",
+    "disable legacy wallet context/signing/raw submission pending verified integration",
+    "bounded read-only transport without settled-response cache",
+    "validate listing identity and metadata; distinguish unavailable listings",
+    "correct creator/protocol fee and legacy curve estimate labels",
+    "remove invented creator activity and stale detail commits",
+    "safe public image URLs; suppress external quotes without freshness proof",
+    "replace listing-derived pseudo transaction events with explicit activity unavailable state"
   ],
   "files": [
     {
@@ -45,7 +52,7 @@
     },
     {
       "path": "testnet/assets/index-8rysgo_r.js",
-      "sha256": "3a4dd8e32889b3682ec1298249119efaf39f94685a4855693a8ecfeef1078a0c"
+      "sha256": "90fadfa4c28aa35c5fff936c36b080a9727b5cb7176aa47a62e101ebe10b8fe0"
     },
     {
       "path": "testnet/assets/inter-cyrillic-600-normal-cwcymest.woff2",
@@ -301,7 +308,7 @@
     },
     {
       "path": "testnet/index.html",
-      "sha256": "64f8c9cf18f4c9c6fc1443b6d7d476bc30fc3cc7370bca7b10960fde1d2a8aef"
+      "sha256": "f7cb324d55985126a7426e527287b643f4823dabfa9b79fff1191ad6dcb2e792"
     },
     {
       "path": "testnet/logos/logodark.png",

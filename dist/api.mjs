@@ -33,36 +33,70 @@ export function createLaunchpadAPI({ fetcher = globalThis.fetch, now = Date.now,
       try { void Promise.resolve(reader ? reader.cancel() : response?.body?.cancel()).catch(() => {}); } catch {}
     }
   }
-  let verified = false, listedFeed = null;
+  let verified = false, listedFeed = null, generation = 0, pendingFeed = null;
   const profileCache = new Map();
-  async function getFeed() {
-    if (!verified) throw new ReadError('NETWORK_UNVERIFIED');
-    try { listedFeed = parseFeed(await read('/market/supply'), now()); return listedFeed; }
-    catch (error) { listedFeed = null; if (error instanceof ReadError) throw error; throw new ReadError('INVALID_DATA'); }
+  function current(run) {
+    if (!verified || run !== generation) throw new ReadError('NETWORK_UNVERIFIED');
+  }
+  function freshToken(tokenId, run) {
+    current(run);
+    if (!listedFeed || listedFeed.expiresAt <= now()) throw new ReadError('FEED_EXPIRED');
+    const token = listedFeed.tokens.find(row => row.id === tokenId);
+    if (!token) throw new ReadError('NOT_LISTED');
+    return token;
+  }
+  function getFeed() {
+    if (!verified) return Promise.reject(new ReadError('NETWORK_UNVERIFIED'));
+    if (pendingFeed) return pendingFeed;
+    const run = generation;
+    const task = (async () => {
+      try {
+        const result = parseFeed(await read('/market/supply'), now()); current(run);
+        listedFeed = result; return result;
+      } catch (error) {
+        if (run === generation) listedFeed = null;
+        if (error instanceof ReadError) throw error; throw new ReadError('INVALID_DATA');
+      }
+    })();
+    pendingFeed = task;
+    task.then(() => { if (pendingFeed === task) pendingFeed = null; }, () => { if (pendingFeed === task) pendingFeed = null; });
+    return task;
   }
   return Object.freeze({
     async verifyNetwork() {
-      verified = false; listedFeed = null; profileCache.clear();
+      const run = ++generation;
+      verified = false; listedFeed = null; pendingFeed = null; profileCache.clear();
       const result = await read('/v2/block/slot/' + CONFIG.checkpointSlot);
+      if (run !== generation) throw new ReadError('NETWORK_UNVERIFIED');
       if (result.success !== true || result.data?.slot !== CONFIG.checkpointSlot || result.data.hash !== CONFIG.checkpointHash) throw new ReadError('NETWORK_MISMATCH');
       verified = true; return true;
     },
     getFeed,
     async getProfile(tokenId, { refresh = false } = {}) {
       if (!verified) throw new ReadError('NETWORK_UNVERIFIED');
+      const run = generation;
       try { coinRoute(tokenId); } catch { throw new ReadError('INVALID_TOKEN'); }
       const snapshot = listedFeed && listedFeed.expiresAt > now() ? listedFeed : await getFeed();
-      const token = snapshot.tokens.find(row => row.id === tokenId);
-      if (!token) throw new ReadError('NOT_LISTED');
+      let token = freshToken(tokenId, run);
       const cached = profileCache.get(tokenId);
-      if (!refresh && cached && cached.expiresAt > now() && cached.token.name === token.name && cached.token.symbol === token.symbol) return cached;
+      if (!refresh && cached && cached.expiresAt > now() && cached.token.name === token.name && cached.token.symbol === token.symbol) {
+        // Metadata can be reused; valuation must come from the current feed.
+        return Object.freeze({ ...cached, token, metadata: cached.metadata && Object.freeze({ ...cached.metadata, valuation: token }), expiresAt: Math.min(snapshot.expiresAt, cached.expiresAt) });
+      }
       let result;
       try {
-        const metadata = parseCoinProfile(await read('/contract/' + tokenId.slice(3)), token);
+        const data = await read('/contract/' + tokenId.slice(3));
+        token = freshToken(tokenId, run);
+        const metadata = parseCoinProfile(data, token);
         result = Object.freeze({ token, metadata, expiresAt: snapshot.expiresAt, metadataError: null });
       } catch (error) {
         result = Object.freeze({ token, metadata: null, expiresAt: snapshot.expiresAt, metadataError: error instanceof ReadError ? error.code : 'INVALID_DATA' });
       }
+      // A failed re-verification, expired feed or removed listing must also
+      // block an older metadata response instead of returning a stale profile.
+      token = freshToken(tokenId, run);
+      if (snapshot.expiresAt <= now()) throw new ReadError('FEED_EXPIRED');
+      result = Object.freeze({ ...result, token, expiresAt: Math.min(snapshot.expiresAt, listedFeed.expiresAt) });
       if (profileCache.size >= 100) profileCache.delete(profileCache.keys().next().value);
       profileCache.set(tokenId, result); return result;
     },

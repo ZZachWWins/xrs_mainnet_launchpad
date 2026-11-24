@@ -88,3 +88,39 @@ test('a cancellation promise cannot delay an otherwise complete valid response',
   })}})});
   assert.equal(await api.verifyNetwork(),true);assert.equal(cancelled,1);
 });
+
+const defer=()=>{let resolve;const promise=new Promise(ok=>resolve=ok);return {promise,resolve};};
+const json=value=>new Response(JSON.stringify(value));
+const checkpoint=()=>json({success:true,data:{slot:CONFIG.checkpointSlot,hash:CONFIG.checkpointHash}});
+const listed=()=>{const value=feed();value.launchpad_tokens=[{token_id:'lp_coin',name:'Coin',symbol:'COIN',status:'unavailable',market_cap_quote_raw:null}];return value;};
+test('late older verification cannot override a newer checkpoint mismatch',async()=>{
+  const first=defer();let calls=0;
+  const api=createLaunchpadAPI({fetcher:async()=>++calls===1?first.promise:json({success:true,data:{slot:CONFIG.checkpointSlot,hash:'wrong'}})});
+  const old=api.verifyNetwork();await assert.rejects(api.verifyNetwork(),e=>e.code==='NETWORK_MISMATCH');first.resolve(checkpoint());
+  await assert.rejects(old,e=>e.code==='NETWORK_UNVERIFIED');await assert.rejects(api.getFeed(),e=>e.code==='NETWORK_UNVERIFIED');assert.equal(calls,2);
+});
+test('old feed cannot commit after re-verification fails',async()=>{
+  const waiting=defer();let verification=0;
+  const api=createLaunchpadAPI({now:()=>NOW,fetcher:async url=>url.endsWith('/market/supply')?waiting.promise:++verification===1?checkpoint():json({success:false})});
+  await api.verifyNetwork();const old=api.getFeed();await assert.rejects(api.verifyNetwork());waiting.resolve(json(feed()));
+  await assert.rejects(old,e=>e.code==='NETWORK_UNVERIFIED');await assert.rejects(api.getFeed(),e=>e.code==='NETWORK_UNVERIFIED');
+});
+test('one hundred simultaneous feed readers share one pending read without settled caching',async()=>{
+  let reads=0;const waiting=defer();const api=createLaunchpadAPI({now:()=>NOW,fetcher:async url=>url.endsWith('/market/supply')?(reads++,waiting.promise):checkpoint()});
+  await api.verifyNetwork();const pending=Array.from({length:100},()=>api.getFeed());assert.equal(reads,1);waiting.resolve(json(feed()));await Promise.all(pending);
+  // A separate response is required for every later settled read.
+  assert.equal(reads,1);
+});
+test('metadata finishing after feed expiry cannot become a current coin profile',async()=>{
+  const waiting=defer();let clock=NOW;
+  const api=createLaunchpadAPI({now:()=>clock,fetcher:async url=>url.includes('/contract/')?waiting.promise:url.endsWith('/market/supply')?json(listed()):checkpoint()});
+  await api.verifyNetwork();await api.getFeed();const result=api.getProfile('lp_coin');clock+=20001;waiting.resolve(json({success:false}));
+  await assert.rejects(result,e=>e.code==='FEED_EXPIRED');
+});
+test('cached metadata uses current feed valuation instead of its earlier token snapshot',async()=>{
+  const owner='4p897nUzAxU9xbaQH69fa3S3hvtn9o1STiobHX4vnLoL';let value=listed(),metadataReads=0;
+  const api=createLaunchpadAPI({now:()=>NOW,fetcher:async url=>url.includes('/contract/')?(metadataReads++,json({success:true,contract:{contract_id:'coin',contract_type:'Launchpad',owner,state:{Launchpad:{token_id:'lp_coin',name:'Coin',symbol:'COIN',creator:owner}}}})):url.endsWith('/market/supply')?json(value):checkpoint()});
+  await api.verifyNetwork();assert.equal((await api.getProfile('lp_coin')).token.status,'unavailable');
+  value=listed();Object.assign(value.launchpad_tokens[0],{status:'ready',decimals:'9',quote_decimals:'6',quote_token_id:'xeris_usdc',quote_symbol:'xUSDC',valuation_basis:'circulating_supply',circulating_raw:'1000000000',market_cap_quote_raw:'1000000',price_xrs_raw_numerator:'1000000000',price_token_raw_denominator:'1000000000',supply:{status:'available',basis:'unlocked_on_chain_v2',token_id:'lp_coin',decimals:9,circulating_raw:'1000000000',issued_supply_raw:'1000000000',components_raw:{wallets:'1000000000',company_wallets:'0',amm_inventory:'0'}}});
+  await api.getFeed();const result=await api.getProfile('lp_coin');assert.equal(result.token.status,'ready');assert.equal(result.token.marketCapRaw,1000000n);assert.equal(result.metadata.valuation.status,'ready');assert.equal(metadataReads,1);
+});

@@ -41,3 +41,23 @@ test('only public HTTPS image metadata is accepted; unsafe protocols, SVGs, loca
     'https:example.com/a.png','https://user:pass@example.com/a.png','https://127.0.0.1/a.png','https://[::1]/a.png','https://localhost/a.png',
     'https://photos.local/a.png','https://example.com:8443/a.png','https://example.com/a.svg','https://example.com/a.png#fragment',' https://example.com/a.png','https://example.com/\\a.png']) assert.throws(()=>safeImageURL(url));
 });
+
+
+test('local file read and bitmap decoding share a bounded deadline without creating URLs', async () => {
+  const urlAPI = urls(); let decodeCalls = 0;
+  await assert.rejects(prepareLocalPhoto({type:'image/png',size:33,arrayBuffer:()=>new Promise(()=>{})},
+    {urlAPI,timeoutMs:5,decode:async()=>{decodeCalls++;}}));
+  await assert.rejects(prepareLocalPhoto(new File([png()],'photo.png',{type:'image/png'}),
+    {urlAPI,timeoutMs:5,decode:()=>new Promise(()=>{})}));
+  assert.equal(decodeCalls,0); assert.deepEqual(urlAPI.created,[]);
+});
+
+test('a bitmap arriving after the local preview deadline closes exactly once', async () => {
+  const urlAPI = urls(); let finish, closed=0;
+  const pending = prepareLocalPhoto(new File([png()],'photo.png',{type:'image/png'}),
+    {urlAPI,timeoutMs:5,decode:()=>new Promise(resolve=>{finish=resolve;})});
+  await assert.rejects(pending);
+  finish({width:128,height:128,close(){closed++;}});
+  await Promise.resolve(); await Promise.resolve();
+  assert.equal(closed,1); assert.deepEqual(urlAPI.created,[]);
+});

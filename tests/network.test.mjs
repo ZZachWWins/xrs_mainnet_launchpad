@@ -27,12 +27,13 @@ test('default boot redirects without loading Mainnet code or asking for wallet p
   assert.equal(await loadSelectedApplication({href:ORIGIN+'/?network=mainnet',replace:()=>assert.fail('unexpected redirect'),loadMainnet:async()=>loads++}),'mainnet');
   assert.equal(loads,1);
 });
-test('legacy patches are exact and preserve explicit Connect while removing unsolicited reconnect',async()=>{
+test('legacy patches are exact and contain wallet actions while preserving read-only routing',async()=>{
   const source=await readFile(new URL('../legacy-source/assets/index-8rysgo_r.js',import.meta.url),'utf8');
   const patched=patchLegacyBundle(source);
   assert.ok(patched.includes('basename:"/testnet"'));assert.ok(patched.includes('"/testnet/rpc"'));
   assert.equal(patched.includes('localStorage.getItem("xeris_connected")'),false);assert.equal(patched.includes('f&&c&&!t&&(d(!1),c.connect()'),false);
-  assert.ok(patched.includes('const p=async()=>{if(!c)'));assert.ok(patched.includes('try{const y=await c.connect()'));
+  assert.equal(patched.includes('window.xeris||window.solana'),false);assert.equal(patched.includes('await c.connect()'),false);
+  assert.ok(patched.includes('connect:legacyWalletUnavailable'));assert.ok(patched.includes('static async submitTransaction(){return legacyWalletUnavailable()}'));
   assert.equal(patched.includes('mainnetrpc.xerisweb.com'),false);
   assert.ok(patched.includes('legacyQuotesReady(d)&&g.jsx("div",{className:"live-ticker-bar glass-panel"'));
   assert.ok(patched.includes('children:"Holder distribution unavailable"'));

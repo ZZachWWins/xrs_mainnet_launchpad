@@ -68,17 +68,27 @@ async function browserDecode(file) {
   } finally { URL.revokeObjectURL(source); }
 }
 /** Memory-only photo handle. fork() gives a draft its own independently released URL. */
-export async function prepareLocalPhoto(file, { decode = browserDecode, urlAPI = URL } = {}) {
+export async function prepareLocalPhoto(file, { decode = browserDecode, urlAPI = URL, timeoutMs = 5000 } = {}) {
   if (!file || !TYPES.has(file.type) || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > IMAGE_LIMITS.bytes
     || typeof file.arrayBuffer !== 'function') throw imageError();
-  let dimensions = inspectImage(new Uint8Array(await file.arrayBuffer()), file.type);
-  let decoded;
+  let dimensions, decoded, timer, finished = false;
+  const duration = Number.isSafeInteger(timeoutMs) ? Math.max(1, Math.min(5000, timeoutMs)) : 5000;
+  const close = bitmap => { try { bitmap?.close?.(); } catch {} };
+  const deadline = new Promise((_, reject) => { timer = setTimeout(() => { finished = true; reject(imageError()); }, duration); });
   try {
-    decoded = await decode(file);
+    const bytes = await Promise.race([Promise.resolve().then(() => file.arrayBuffer()), deadline]);
+    dimensions = inspectImage(new Uint8Array(bytes), file.type);
+    const decoding = Promise.resolve().then(() => decode(file)).then(bitmap => {
+      // createImageBitmap cannot be cancelled. Release a late result after the
+      // UI deadline rather than retaining its decoded buffer off screen.
+      if (finished) { close(bitmap); throw imageError(); }
+      return bitmap;
+    });
+    decoded = await Promise.race([decoding, deadline]);
     if (!((decoded.width === dimensions.width && decoded.height === dimensions.height)
       || (decoded.width === dimensions.height && decoded.height === dimensions.width))) throw imageError();
     dimensions = { width: decoded.width, height: decoded.height };
-  } catch { throw imageError(); } finally { decoded?.close?.(); }
+  } catch { throw imageError(); } finally { finished = true; clearTimeout(timer); close(decoded); }
   function handle() {
     const url = urlAPI.createObjectURL(file); let released = false;
     return Object.freeze({ url, name: String(file.name || 'Local photo').slice(0, 180), ...dimensions, bytes: file.size,

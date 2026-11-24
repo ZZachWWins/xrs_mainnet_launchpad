@@ -18,7 +18,7 @@ export function parseExactJSON(text) {
     (token, number) => number ? JSON.stringify(number) : token));
 }
 function label(value, max) {
-  if (typeof value !== 'string' || !value.trim() || value.length > max || /[\u0000-\u001f\u007f]/.test(value)) fail();
+  if (typeof value !== 'string' || !value.trim() || value.length > max || /[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/.test(value)) fail();
   return value;
 }
 export function parseFeed(data, now = Date.now()) {
@@ -84,7 +84,7 @@ export function previewToken(input) {
   const description = input.description.trim(); let imageUrl = input.imageUrl.trim();
   if (!name || byteLength(name) > 32 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('Enter a token name of at most 32 UTF-8 bytes.');
   if (!ticker || byteLength(ticker) > 10 || !/^[A-Za-z0-9]+$/.test(ticker)) throw new Error('Enter a symbol using at most 10 ASCII letters or numbers.');
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,115}$/.test(contractId) || /^(xeris_|system|__)/i.test(contractId)
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,115}$/.test(contractId) || /^(xeris_|identity_|agent_registry_|system|__)/i.test(contractId) || /_xrs_pool$/i.test(contractId)
     || ['xrs_native', 'xeris_usdc'].includes(contractId)) throw new Error('Enter a portable, nonreserved contract ID of at most 116 characters.');
   if (byteLength(description) > 1024 || byteLength(imageUrl) > 512) throw new Error('Keep the description within 1,024 bytes and image URL within 512 bytes.');
   if (imageUrl) {

@@ -7,7 +7,7 @@ async function copyChanged(source, destination) {
 }
 const output = new URL('./dist/', import.meta.url);
 await mkdir(output, { recursive: true });
-for (const name of ['index.html', 'launchpad.css', 'model.mjs', 'api.mjs', 'app.mjs', 'startup.mjs', 'images.mjs', 'profiles.mjs', 'network.mjs', 'network.css']) {
+for (const name of ['index.html', 'launchpad.css', 'model.mjs', 'api.mjs', 'app.mjs', 'startup.mjs', 'images.mjs', 'profiles.mjs', 'network.mjs', 'network.css', 'legacy-safety.mjs']) {
   await copyChanged(new URL('./src/' + name, import.meta.url), new URL(name, output));
 }
 await prepareLegacy(new URL('./', import.meta.url), output);

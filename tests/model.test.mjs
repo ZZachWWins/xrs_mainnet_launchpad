@@ -68,3 +68,19 @@ test('local token preview follows supply reservations and exact retained-metadat
   }
   assert.equal('transaction' in result, false); assert.equal('signature' in result, false);
 });
+
+
+test('untrusted launch labels reject bidi/control display spoofing', () => {
+  for (const name of ['Hidden\u202e', 'Hidden\u2066', 'Broken\u0000']) {
+    const row = token(); row.name = name;
+    assert.throws(() => parseFeed(snapshot([row]), NOW));
+  }
+});
+
+test('local contract preview rejects protocol-reserved namespaces before any creation flow', () => {
+  const input = { name:'Local idea', ticker:'IDEA', contractId:'local-idea', description:'', imageUrl:'', totalSupply:'1000000000', targetXrs:'10000', liquidityPercent:'20' };
+  for (const contractId of ['identity_alice', 'agent_registry_alice', 'coin_xrs_pool']) {
+    assert.throws(() => previewToken({...input, contractId}));
+  }
+  assert.equal(previewToken(input).contractId, 'local-idea');
+});
