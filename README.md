@@ -18,6 +18,10 @@ On this Mac, the available Node executable is `/Applications/ChatGPT.app/Content
 
 For Netlify, `netlify.toml` builds the local source and publishes `dist`. Mainnet uses hash navigation; the preserved Testnet BrowserRouter has its own `/testnet/*` SPA fallback and isolated RPC proxies. Static fonts and the Xeris logo are included locally; no CDN scripts, runtime packages or private configuration are needed.
 
+The build also generates `dist/_headers` and `dist/_redirects` from that same `netlify.toml`, so deployments that publish the built directory carry the header policy, Testnet proxies, SPA fallback and legacy bookmark redirects with their assets. Do not edit the generated files. The dependency-free transform accepts only the current single-line build, header and redirect configuration; unsupported TOML features or route conditions fail the build rather than being omitted. Add explicit parser support before extending the configuration.
+
+Use the repository root as the Netlify base/package directory, `node build.mjs` as the build command and `dist` as the publish directory. After deployment, verify the live CSP on both networks, `/testnet/create?network=testnet`, `/create`, and the Testnet read routes. Matching HTML alone does not verify active deployment rules. The Mainnet HTML keeps its own stricter CSP, including Mainnet-only API connections.
+
 ## Mainnet Beta behavior
 
 - Mainnet identity check against slot `27201` and hash `0a401c139eef73f049010450d4aa13ef38636799784d01bbc0ecdb9c71facaf3` at `https://mainnetrpc.xerisweb.com`.

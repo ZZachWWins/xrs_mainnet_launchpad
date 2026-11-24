@@ -1,0 +1,12 @@
+# Generated from netlify.toml by build.mjs. Do not edit.
+/testnet/rpc/* https://rpc.xerisweb.com/:splat 200!
+/testnet/rpc https://rpc.xerisweb.com/ 200!
+/testnet/jsonrpc/* https://rpc.xerisweb.com/:splat 200!
+/testnet/jsonrpc https://rpc.xerisweb.com/ 200!
+/testnet/* /testnet/index.html 200
+/create /testnet/create?network=testnet 302
+/features /testnet/features?network=testnet 302
+/ecosystem /testnet/ecosystem?network=testnet 302
+/docs /testnet/docs?network=testnet 302
+/dashboard /testnet/dashboard?network=testnet 302
+/token/:id /testnet/token/:id?network=testnet 302
