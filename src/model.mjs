@@ -1,3 +1,4 @@
+import { safeImageURL } from './images.mjs';
 export const CONFIG = Object.freeze({ rpc: 'https://mainnetrpc.xerisweb.com', chainId: 'xeris-mainnet-v4',
   checkpointSlot: '27201', checkpointHash: '0a401c139eef73f049010450d4aa13ef38636799784d01bbc0ecdb9c71facaf3',
   poolId: 'xrs-xusdc-mainnet-v1', quoteToken: 'xeris_usdc',
@@ -80,15 +81,14 @@ export function parseDecimal(text, decimals) {
 export function previewToken(input) {
   const byteLength = value => new TextEncoder().encode(value).length;
   const name = input.name.trim(), ticker = input.ticker.trim(), contractId = input.contractId.trim();
-  const description = input.description.trim(), imageUrl = input.imageUrl.trim();
+  const description = input.description.trim(); let imageUrl = input.imageUrl.trim();
   if (!name || byteLength(name) > 32 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('Enter a token name of at most 32 UTF-8 bytes.');
   if (!ticker || byteLength(ticker) > 10 || !/^[A-Za-z0-9]+$/.test(ticker)) throw new Error('Enter a symbol using at most 10 ASCII letters or numbers.');
   if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,115}$/.test(contractId) || /^(xeris_|system|__)/i.test(contractId)
     || ['xrs_native', 'xeris_usdc'].includes(contractId)) throw new Error('Enter a portable, nonreserved contract ID of at most 116 characters.');
   if (byteLength(description) > 1024 || byteLength(imageUrl) > 512) throw new Error('Keep the description within 1,024 bytes and image URL within 512 bytes.');
   if (imageUrl) {
-    let url; try { url = new URL(imageUrl); } catch { throw new Error('Use a complete HTTPS image URL.'); }
-    if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Use a complete HTTPS image URL without credentials.');
+    imageUrl = safeImageURL(imageUrl);
   }
   const supplyRaw = parseDecimal(input.totalSupply, 9), targetRaw = parseDecimal(input.targetXrs, 9), liquidityBps = parseDecimal(input.liquidityPercent, 2);
   if (liquidityBps < 500n || liquidityBps > 4000n) throw new Error('Reserve between 5% and 40% for graduated liquidity.');

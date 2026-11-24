@@ -11,4 +11,61 @@ Referrer-Policy = "no-referrer"
 X-Frame-Options = "DENY"
 Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 Cache-Control = "no-cache"
-Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src https://mainnetrpc.xerisweb.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
+Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https: blob: data:; connect-src 'self' https://mainnetrpc.xerisweb.com https://rpc.xerisweb.com https://api.binance.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'"
+
+
+# The preserved Testnet app uses only these isolated same-origin RPC proxies.
+[[redirects]]
+from = "/testnet/rpc/*"
+to = "https://rpc.xerisweb.com/:splat"
+status = 200
+force = true
+[[redirects]]
+from = "/testnet/rpc"
+to = "https://rpc.xerisweb.com/"
+status = 200
+force = true
+[[redirects]]
+from = "/testnet/jsonrpc/*"
+to = "https://rpc.xerisweb.com/:splat"
+status = 200
+force = true
+[[redirects]]
+from = "/testnet/jsonrpc"
+to = "https://rpc.xerisweb.com/"
+status = 200
+force = true
+[[redirects]]
+from = "/testnet/*"
+to = "/testnet/index.html"
+status = 200
+
+[[redirects]]
+from = "/create"
+to = "/testnet/create?network=testnet"
+status = 302
+
+[[redirects]]
+from = "/features"
+to = "/testnet/features?network=testnet"
+status = 302
+
+[[redirects]]
+from = "/ecosystem"
+to = "/testnet/ecosystem?network=testnet"
+status = 302
+
+[[redirects]]
+from = "/docs"
+to = "/testnet/docs?network=testnet"
+status = 302
+
+[[redirects]]
+from = "/dashboard"
+to = "/testnet/dashboard?network=testnet"
+status = 302
+
+[[redirects]]
+from = "/token/:id"
+to = "/testnet/token/:id?network=testnet"
+status = 302
