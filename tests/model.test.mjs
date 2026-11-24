@@ -23,7 +23,7 @@ test('fresh complete verified feed can truthfully be empty; missing or unavailab
     data => data.as_of.block_hash = 'wrong', data => data.blocks[0].slot = '1', data => data.policy.id = 'unknown']) {
     const data = snapshot(); mutate(data); assert.throws(() => parseFeed(data, NOW));
   }
-  assert.equal(CONFIG.dexUrl, null);
+  assert.equal(CONFIG.dexUrl, 'https://dex.xerisweb.com/?network=mainnet#home');
 });
 
 test('circulating valuation uses exact integer components and pool ratios, never old summary fields', () => {

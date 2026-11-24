@@ -2,8 +2,8 @@ import { safeImageURL } from './images.mjs';
 export const CONFIG = Object.freeze({ rpc: 'https://mainnetrpc.xerisweb.com', chainId: 'xeris-mainnet-v4',
   checkpointSlot: '27201', checkpointHash: '0a401c139eef73f049010450d4aa13ef38636799784d01bbc0ecdb9c71facaf3',
   poolId: 'xrs-xusdc-mainnet-v1', quoteToken: 'xeris_usdc',
-  // Enable only after the destination is confirmed to serve the mainnet DEX.
-  dexUrl: null });
+  // Confirmed to serve Mainnet Beta; explicitly select the network at destination.
+  dexUrl: 'https://dex.xerisweb.com/?network=mainnet#home' });
 const U64 = (1n << 64n) - 1n, HASH = /^[0-9a-f]{64}$/;
 const fail = () => { throw new Error('The launchpad feed could not be verified.'); };
 export function integer(value, positive = false, wide = false) {

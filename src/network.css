@@ -19,3 +19,19 @@
 @media(max-width:768px){.legacy-testnet .navbar-links{top:var(--legacy-network-height);height:calc(100vh - var(--legacy-network-height));height:calc(100dvh - var(--legacy-network-height));box-sizing:border-box}}
 @media(max-width:760px){.network-bar{flex-wrap:wrap}.network-bar .launchpad-network-selector{margin-left:auto}.network-bar #network-status{flex-basis:100%;max-width:none;text-align:left}.launchpad-network-selector a{font-size:11px;padding:7px 10px}.legacy-network-bar{padding:10px 16px;gap:14px}.legacy-network-description{display:block;margin-left:0;font-size:9px}.legacy-startup-loader h1{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.legacy-startup-loader .loading-ring{animation:none;border-right-color:#a2b6ff}}
+
+/* One network-switch rhythm across the modern and retained Testnet pages. */
+.launchpad-network-selector a{min-height:44px;transition:color 140ms ease,border-color 140ms ease,background-color 140ms ease}
+.launchpad-network-selector a:hover{background:#ffffff04}
+.legacy-testnet a:focus-visible,.legacy-testnet button:focus-visible,.legacy-testnet input:focus-visible{outline:2px solid #c8d5ff;outline-offset:4px}
+.legacy-testnet .token-card{transition:border-color 140ms ease,background-color 140ms ease}
+.legacy-testnet .token-card:focus-within{border-color:#a7bbf4}
+@media(max-width:760px){.launchpad-network-selector a{min-height:44px;font-size:12px}.legacy-network-bar{gap:10px}.legacy-network-description{font-size:10px}}
+@media(max-width:520px){
+  .legacy-network-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;padding:10px 16px}
+  .legacy-network-bar>div{display:contents}
+  .legacy-network-bar strong{grid-column:1;grid-row:1;font-size:11px;line-height:1.5}
+  .legacy-network-bar .launchpad-network-selector{grid-column:2;grid-row:1}
+  .legacy-network-description{grid-column:1/-1;grid-row:2;font-size:10px;line-height:1.6}
+}
+@media(prefers-reduced-motion:reduce){.legacy-testnet *, .legacy-testnet *::before,.legacy-testnet *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.launchpad-network-selector a{transition:none}}

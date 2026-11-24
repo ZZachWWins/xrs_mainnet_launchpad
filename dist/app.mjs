@@ -17,6 +17,27 @@ if (CONFIG.dexUrl) {
 let feed = null, filter = 'all', loading = false, verified = false, connecting = false, generation = 0;
 let selectedPhoto = null, photoGeneration = 0, photoLoading = false, profileGeneration = 0, currentProfile = null, thumbnailGeneration = 0;
 const drafts = createDraftStore();
+function focusTarget(node) {
+  if (!node || $('main').hidden) return;
+  node.tabIndex = -1; node.focus({ preventScroll: true });
+}
+function settleProfileFocus() {
+  const view = $('view-profile');
+  // A late read must not reclaim focus after the visitor moves elsewhere.
+  if (!view.hidden && document.activeElement === view) focusTarget(view.querySelector('h1, h3'));
+}
+function revealView(view) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !view.animate) return;
+  view.getAnimations().forEach(animation => animation.cancel());
+  view.animate([{ opacity: .72, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }],
+    { duration: 180, easing: 'cubic-bezier(.2,.7,.2,1)' });
+}
+const previewColumn = document.querySelector('.preview-column');
+function fitPreviewColumn() {
+  previewColumn.classList.toggle('fits-viewport', innerWidth >= 1000 && previewColumn.scrollHeight <= innerHeight - 64);
+}
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fitPreviewColumn).observe(previewColumn);
+window.addEventListener('resize', fitPreviewColumn, { passive: true });
 function picture(source, name, symbol, className = 'token-avatar') {
   const box = element('div', undefined, className), fallback = element('span', symbol.slice(0, 2).toUpperCase());
   box.setAttribute('role', 'img'); box.setAttribute('aria-label', `Photo unavailable for ${name}`); fallback.setAttribute('aria-hidden', 'true'); box.append(fallback);
@@ -177,9 +198,11 @@ function renderCoinHome(profile) {
     : 'Creation, buying, selling, graduation and reward claims remain unavailable on this website.', 'profile-muted'));
   main.append(about, economics, livestream); sidebar.append(creator, scope); layout.append(main, sidebar); container.replaceChildren(header, layout);
   document.title = `${name} · ${draft ? 'Local preview' : 'Coin profile'} · Xeris Launchpad`;
+  settleProfileFocus();
 }
 async function openProfile(profileRoute, refresh = false) {
-  const attempt = ++profileGeneration, container = $('coin-content'); currentProfile = null;
+  const attempt = ++profileGeneration, container = $('coin-content');
+  const restoreFocus = refresh && container.contains(document.activeElement); currentProfile = null;
   if (!profileRoute || profileRoute.kind === 'invalid') { container.replaceChildren(emptyState('Coin profile unavailable', 'This link does not identify a supported coin or local preview.')); container.setAttribute('aria-busy', 'false'); return; }
   if (profileRoute.kind === 'draft') {
     const draft = drafts.get();
@@ -193,21 +216,30 @@ async function openProfile(profileRoute, refresh = false) {
     return;
   }
   loadingView(container, 'Loading coin photo and creator profile…');
+  if (restoreFocus) focusTarget($('view-profile'));
   try { const info = await api.getProfile(profileRoute.tokenId, { refresh }); if (attempt !== profileGeneration) return; renderCoinHome({ kind: 'coin', ...info }); }
   catch (error) {
     if (attempt !== profileGeneration) return;
     const button = element('button', 'Retry coin profile', 'button'); button.type = 'button'; button.onclick = () => openProfile(profileRoute, true);
     container.replaceChildren(emptyState('Coin profile unavailable', error?.code === 'NOT_LISTED' ? 'This token is not listed in the current verified feed. No creator or token metadata has been inferred.' : 'Current coin information could not be verified. Please retry the profile.', button)); container.setAttribute('aria-busy', 'false');
+    settleProfileFocus();
   }
 }
-function route() {
+function route(event) {
   const requested = location.hash.slice(1), profileRoute = parseProfileRoute(location.hash), view = profileRoute ? 'profile' : ['create', 'guide'].includes(requested) ? requested : 'discover';
+  const arriving = $(`view-${view}`), changed = arriving.hidden;
   profileGeneration++;
   for (const name of ['discover', 'create', 'guide', 'profile']) $(`view-${name}`).hidden = name !== view;
-  for (const link of document.querySelectorAll('[data-view]')) { if (link.dataset.view === view) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); }
-  document.title = `${view === 'create' ? 'Create preview' : view === 'guide' ? 'How it works' : 'Discover'} · Xeris Launchpad`;
+  for (const link of document.querySelectorAll('[data-view]')) { if (link.dataset.view === (view === 'profile' ? 'discover' : view)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); }
+  document.title = `${view === 'create' ? 'Create preview' : view === 'guide' ? 'How it works' : view === 'profile' ? 'Coin profile' : 'Discover'} · Xeris Launchpad`;
   if (!['launches', 'main'].includes(requested)) window.scrollTo({ top: 0, behavior: 'instant' });
   if (profileRoute) openProfile(profileRoute);
+  if (event?.type === 'hashchange' && !$('main').hidden) {
+    const target = requested === 'launches' ? $('launches-title') : requested === 'main' ? $('main') : arriving.querySelector('h1') || arriving;
+    focusTarget(target);
+    if (changed) revealView(arriving);
+  }
+  fitPreviewColumn();
 }
 $('refresh-feed').onclick = () => refreshFeed(); $('retry-connection').onclick = connect;
 $('token-search').oninput = () => { if (!loading) renderFeed(); };
@@ -247,7 +279,8 @@ $('photo-url').onchange = () => {
   catch (error) { $('photo-selection').replaceChildren(brandImage('brand-placeholder')); $('photo-status').textContent = error.message; }
 };
 $('preview-form').onsubmit = async event => {
-  event.preventDefault(); const current = ++previewGeneration, button = $('preview-button');
+  event.preventDefault(); const current = ++previewGeneration, button = $('preview-button'), focusOrigin = document.activeElement;
+  const mayMoveFocus = () => !$('view-create').hidden && (document.activeElement === document.body || document.activeElement === focusOrigin);
   if (photoLoading) return;
   const input = Object.fromEntries(new FormData(event.currentTarget));
   button.disabled = true; button.textContent = 'Preparing your token preview…'; $('preview-error').hidden = true;
@@ -275,8 +308,13 @@ $('preview-form').onsubmit = async event => {
       ? 'This photo is local only. A public hosted image URL is still required before any future launch and may change the metadata-fee estimate. Nothing has been deployed.'
       : 'This metadata estimate does not check ID availability, wallet balance or live execution. No transaction has been created.', 'preview-warning'));
     container.setAttribute('aria-busy', 'false');
+    if (mayMoveFocus()) {
+      focusTarget(container.querySelector('h2'));
+      container.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    }
   } catch (error) {
     $('preview-error').textContent = error.message; $('preview-error').hidden = false;
+    if (mayMoveFocus()) { focusTarget($('preview-error')); $('preview-error').scrollIntoView({ block: 'nearest', behavior: 'instant' }); }
     $('token-preview').setAttribute('aria-busy', 'false'); $('token-preview').replaceChildren(emptyState('Your preview needs a few details', 'Correct the highlighted message, then build the local preview again.'));
   } finally { button.disabled = false; button.textContent = 'Build local preview ↗'; }
 };

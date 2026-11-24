@@ -28,9 +28,9 @@ For Netlify, `netlify.toml` builds the local source and publishes `dist`. Mainne
 
 ## Disabled behavior and limits
 
-The new Mainnet application has no wallet integrations, signing calls, writes, token deployments, curve buys/sells, graduations, reward claims or funded operations. The separately preserved Testnet application retains its existing explicit wallet flows; no signing or funded actions were exercised during this integration. Token-contract ID availability and wallet balances are not checked by the local preview. New-launch vesting is disabled in the mapped protocol.
+The Mainnet application has no wallet integrations, signing calls, writes, token deployments, curve buys/sells, graduations, reward claims or funded operations. Testnet preserves token discovery and historical chain reads; its wallet context, signing and submission entry points are disabled following the frontend audit. No wallet connections or funded actions were exercised during website validation. Token-contract ID availability and wallet balances are not checked by the local preview. New-launch vesting is disabled in the mapped protocol.
 
-The mainnet DEX link defaults to disabled (`CONFIG.dexUrl = null` in `src/model.mjs`). Set it only after confirming that the destination serves the reviewed mainnet DEX; an existing hostname must not be assumed to do so.
+The Mainnet DEX link explicitly selects `https://dex.xerisweb.com/?network=mainnet#home`, verified in the public browser on November 24, 2026. This is navigation to the separate DEX; it does not enable launchpad wallet actions. Set `CONFIG.dexUrl` to `null` to display the unavailable fallback if the destination changes.
 
 Curve fees are 1% creator plus 0.77% protocol. Graduated generic pools charge 0.3% LP fees; the interface makes no lifetime creator-fee claim. It does not use legacy list counters as true sold inventory, spot pricing or circulating market cap.
 
@@ -39,6 +39,8 @@ The launchpad summary route was unavailable during the initial read probe. This 
 ## Source layout and assets
 
 `src/index.html` and `src/launchpad.css` define the responsive UI. `startup.mjs` handles boot recovery; `app.mjs` manages view and loading states; `api.mjs` restricts network reads; `model.mjs` validates public data and local previews. `build.mjs` copies these files and the explicit `public/assets` allowlist into `dist`. Tests use synthetic public fixtures and mock HTTP only.
+
+Route changes use a brief entrance and move focus into the selected view. Async profile responses restore focus only when that profile still owns it; background feed updates do not move focus. Reduced-motion preferences disable transitions and spinner rotation. The desktop preview column stays alongside the form only when its complete contents fit within the viewport. Mainnet navigation and primary mobile actions have at least 44-pixel targets.
 
 ## Coin photos and creator profiles
 
