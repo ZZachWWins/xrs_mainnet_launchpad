@@ -1,1 +1,0 @@
-launch on mainnet 
