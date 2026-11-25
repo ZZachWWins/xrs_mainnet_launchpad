@@ -35,3 +35,8 @@
   .legacy-network-description{grid-column:1/-1;grid-row:2;font-size:10px;line-height:1.6}
 }
 @media(prefers-reduced-motion:reduce){.legacy-testnet *, .legacy-testnet *::before,.legacy-testnet *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.launchpad-network-selector a{transition:none}}
+
+/* Xeris institutional palette */
+.launchpad-network-selector a{color:#94A3B8}.launchpad-network-selector a[aria-current=page]{color:#F0F2F5;border-bottom-color:#8FA3FF}.launchpad-network-selector a:hover{color:#F0F2F5}.launchpad-network-selector a:focus-visible{outline-color:#8FA3FF}
+.legacy-network-bar{background:#080E27;border-bottom-color:#4E5BA6;color:#C5D0E6}.legacy-network-bar strong,.legacy-network-bar a[aria-current=page]{color:#F0F2F5}.legacy-network-bar a{color:#94A3B8}.legacy-history-unavailable{border-color:#4E5BA6;background:#0A0F2A}
+.legacy-startup-loader{background:#05081A;color:#F0F2F5}.legacy-startup-loader p{color:#94A3B8}.legacy-startup-loader .loading-ring{border-color:#4E5BA6;border-top-color:#8FA3FF}.legacy-startup-loader button{border-color:#8FA3FF;background:#0019A5;color:#F0F2F5}
