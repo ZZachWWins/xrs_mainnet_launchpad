@@ -73,6 +73,7 @@ test('built legacy asset references resolve with exact case and use a separate f
   const bundle=await readFile(new URL('../dist/testnet/assets/index-8rysgo_r.js',import.meta.url),'utf8');
   assert.ok(html.includes('/testnet/startup.mjs'));assert.equal(html.includes('<iframe'),false);
   assert.ok(html.includes('href="/?network=mainnet">Mainnet Beta</a>'));assert.equal(html.includes('>Mainnet</a>'),false);
+  assert.ok(html.includes('SECURITY AUDITED'));assert.ok(html.includes('Built on the CertiK-audited Xeris L1 core.'));
   assert.equal(html.includes('mainnetrpc.xerisweb.com'),false);assert.ok(html.includes("connect-src 'self' https://rpc.xerisweb.com https://api.binance.com"));
   const references=[...html.matchAll(/(?:src|href)="(\/testnet\/[^"?]+)"/g),...css.matchAll(/url\((\/testnet\/[^)]+)\)/g),...bundle.matchAll(/src:"(\/testnet\/logos\/[^"?]+)"/g)].map(match=>match[1]);
   assert.ok(references.length>50);
@@ -87,6 +88,8 @@ test('Mainnet keeps strict image/script policy while the legacy compatibility po
   assert.equal(html.includes("img-src 'self' https: blob: data:"),false);
   assert.ok(html.includes('href="/?network=mainnet#create"'));assert.ok(html.includes('alt="Xeris logo"'));
   assert.ok(html.includes('href="/?network=mainnet" aria-current="page">Mainnet Beta</a>'));assert.equal(html.includes('>Mainnet</a>'),false);
+  assert.ok(html.includes('SECURITY AUDITED'));assert.ok(html.includes('Built on the CertiK-audited Xeris L1 core.'));
+  assert.ok(html.includes('<strong>Security audited.</strong>'));
   assert.equal(html.includes('✳'),false);
   const app=await readFile(new URL('../src/app.mjs',import.meta.url),'utf8');assert.equal(app.includes('✳'),false);
 });

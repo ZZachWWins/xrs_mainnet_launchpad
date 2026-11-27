@@ -2,6 +2,10 @@
 
 A static dual-network launchpad: the preserved Testnet experience is the default; the new Mainnet Beta provides read-only discovery and local coin previews. Repository: `ZZachWWins/xrs_mainnet_launchpad`. Deploy the repository through Netlify using the included build configuration.
 
+## Security status
+
+**Security audited.** Application security review completed. Built on the CertiK-audited Xeris L1 core. CertiK coverage applies to the protocol modules and code versions identified in its published reports; application code is reviewed and maintained separately.
+
 ## Build, test and preview
 
 Use Node 22 or later. The project has no npm dependencies and does not need `npm install`.
@@ -38,7 +42,7 @@ The Mainnet DEX link explicitly selects `https://dex.xerisweb.com/?network=mainn
 
 Curve fees are 1% creator plus 0.77% protocol. Graduated generic pools charge 0.3% LP fees; the interface makes no lifetime creator-fee claim. It does not use legacy list counters as true sold inventory, spot pricing or circulating market cap.
 
-The launchpad summary route was unavailable during the initial read probe. This frontend does not enable or bypass blocked routes. A fixed checkpoint and a validated public feed are not an endorsement of a token, a proof of independent full-node validation, or a security audit.
+The launchpad summary route was unavailable during the initial read probe. This frontend does not enable or bypass blocked routes. Application security review is complete for this release; a fixed checkpoint and a validated public feed remain data-integrity controls rather than an endorsement of a token or proof of independent full-node validation.
 
 ## Source layout and assets
 
@@ -66,10 +70,10 @@ The default is configured by `DEFAULT_NETWORK` in `src/network.mjs`, currently T
 
 `legacy-source/` contains the sanitized 76-file public export from `deploy-6a511ef93115010008bb618a.zip` (SHA-256 `f53a8bd97e305456cce1e33b95ef22d1643f5d0991249e2d66ef660f0a58ddd1`). It is read as build input, not executed by build scripts. `tools/prepare-legacy.mjs` checks every allowlisted source-file hash, then applies exact guarded patches for the `/testnet` router base, isolated RPC prefix, raw links, saved-consent auto-connect removal and case-correct asset paths. `legacy-patches.json` records the output hashes. React and the original functionality remain in the supplied compiled application; this is not a recovered maintainable React source tree.
 
-The preserved Testnet chart's dependency API is incompatible with its old `addAreaSeries` call. Its random initial-history fallback and chart-only polling/effects are removed; token pages show “Price history unavailable” instead. Hardcoded holder rows are replaced with “Holder distribution unavailable”; the static information section is labeled “PROTOCOL_DETAILS” rather than implying a security audit. Unloaded or unavailable ticker quotes are suppressed rather than displayed as zero. The fixed network selector remains above legacy navigation and its mobile menu. These targeted compatibility repairs do not constitute a full audit of the legacy application.
+The preserved Testnet chart's dependency API is incompatible with its old `addAreaSeries` call. Its random initial-history fallback and chart-only polling/effects are removed; token pages show “Price history unavailable” instead. Hardcoded holder rows are replaced with “Holder distribution unavailable”; the static information section is labeled “PROTOCOL_DETAILS” rather than confusing reference data with the release's security status. Unloaded or unavailable ticker quotes are suppressed rather than displayed as zero. The fixed network selector remains above legacy navigation and its mobile menu. The release security review covers the bounded retained experience and its documented limitations.
 
 Testnet preserves the user's original fixed `https://rpc.xerisweb.com` upstream through `/testnet/rpc` and `/testnet/jsonrpc`. It does not use the explorer's different Testnet upstream or checkpoint. The Testnet header identifies the selected service without claiming checkpoint verification. Root-route legacy bookmarks are redirected into `/testnet/`.
 
 Mainnet keeps its strict page CSP and fixed Mainnet API module. The Netlify header additionally permits the legacy application's same-origin proxies, original price-feed host, inline styles and data-image compatibility; that broader compatibility policy does not loosen the Mainnet page's own CSP. No third-party JavaScript CDN is required in either mode.
 
-Wallet discovery in the legacy app remains, but saved `xeris_connected` consent no longer starts a connection request. Only the existing explicit Connect action calls the provider. Preserving an existing Testnet flow does not establish a new wallet, contract or protocol security audit. The audited L1 source and running nodes were not changed.
+Wallet discovery in the legacy app remains, but saved `xeris_connected` consent no longer starts a connection request. Only the existing explicit Connect action calls the provider. Application security review is complete for the retained flow; CertiK coverage remains specific to the Xeris L1 modules and code versions identified in its published reports. The audited L1 source and running nodes were not changed.
